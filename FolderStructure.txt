@@ -1,0 +1,71 @@
+nastaliq-fertility/
+├── README.md
+├── environment.yml               # or requirements.txt — pin mBERT/XLM-R/tokenizer versions
+├── preregistration/
+│   ├── osf_prereg_draft.md
+│   ├── osf_prereg_timestamped.pdf   # frozen copy once live (Day 13)
+│   └── hypotheses_RQ1-RQ4.md
+│
+├── data/
+│   ├── raw/                      # FLORES-200 pulled as-is (Day 1)
+│   ├── splits/                   # Urdu/Hindi, Serbian Cyrillic/Latin subsets
+│   └── checksums.txt             # verify coverage/integrity, don't trust dataset card
+│
+├── src/
+│   ├── method_a/                 # reproduction: Pires vs. Del & Fishel
+│   │   ├── xsim_fork/            # forked xsim codebase (Day 1), keep as its own subpackage
+│   │   ├── cka.py                # pooled + token-level CKA (Day 6)
+│   │   ├── anc.py                # ANC implementation
+│   │   ├── cosine_nn.py          # cosine similarity + NN-accuracy
+│   │   └── run_method_a.py
+│   │
+│   ├── method_b/                 # matched-control / count-matching
+│   │   ├── tokenizer_sampling/
+│   │   │   ├── xlmr_sampling.py      # SentencePiece BPE-dropout (Day 10)
+│   │   │   ├── mbert_maxmatch.py     # Hiraoka MaxMatch-Dropout (Day 11)
+│   │   │   └── uniform_sampling_fst.py  # Cognetta et al. fallback (Day 12)
+│   │   ├── count_matching.py     # sample/resample-or-discard logic (Day 15)
+│   │   └── run_method_b.py
+│   │
+│   ├── stats/
+│   │   ├── regression.py         # per-layer regression, Day 22
+│   │   ├── bh_correction.py      # Benjamini-Hochberg
+│   │   ├── by_correction.py      # Benjamini-Yekutieli (robustness)
+│   │   ├── tost.py               # equivalence test
+│   │   └── nested_model_lrt.py   # secondary check
+│   │
+│   └── common/
+│       ├── model_loaders.py      # mBERT/XLM-R/Llama 3.1 8B wrappers
+│       ├── pooling.py
+│       └── logging_utils.py      # discard-rate + deviation logging
+│
+├── results/
+│   ├── method_a/
+│   │   ├── checkpoint1_raw/      # frozen outputs (Day 7)
+│   │   └── tables_figures/
+│   ├── method_b/
+│   │   ├── pilot/                # Day 15-17 pilot logs, discard rates
+│   │   ├── full_scale/           # Day 18-19 outputs per language pair
+│   │   └── discard_rate_audit/   # Day 20
+│   └── final/
+│       ├── tables/                # Day 27 consolidated tables
+│       └── figures/
+│
+├── paper/
+│   ├── paper_a_reconciliation/
+│   ├── paper_b_dissociation/
+│   ├── sections/
+│   │   ├── related_work.md       # Section 6, incl. the rewritten sentence
+│   │   ├── methods.md
+│   │   ├── results.md
+│   │   ├── discussion.md
+│   │   └── limitations_ethics.md
+│   └── submission/
+│       ├── arxiv_format/
+│       └── blackboxnlp_arr_format/
+│
+├── notebooks/                    # exploratory only — nothing load-bearing lives here
+│
+└── scripts/
+    ├── smoke_test.py             # Day 3 trivial end-to-end check
+    └── plagiarism_check.sh       # Day 33 full-draft similarity scan
