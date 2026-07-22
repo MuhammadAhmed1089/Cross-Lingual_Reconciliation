@@ -1,1 +1,16 @@
-{}
+{
+  "source": {
+    "hf_repo": "facebook/flores",
+    "coverage_ok": true
+  },
+  "groups": {
+    "hindi_urdu": [
+      "hin_Deva",
+      "urd_Arab"
+    ],
+    "kanuri": [
+      "knc_Arab",
+      "knc_Latn"
+    ]
+  }
+}

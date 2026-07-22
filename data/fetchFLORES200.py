@@ -22,10 +22,35 @@ Requires: pip install datasets huggingface_hub
 
 Usage:
     python fetch_flores.py
+
+Output layout:
+    data/
+      raw/                       # untouched — reserved for a raw source
+                                  # dump if one is ever added; this script
+                                  # streams via `datasets` so it stays empty
+      splits/
+        original/                # per-language dev/devtest, as pulled
+          hin_Deva.dev.txt
+          hin_Deva.devtest.txt
+          knc_Arab.dev.txt
+          ...
+        hindi_urdu/               # grouped copy for the Hindi-Urdu pair
+          hin_Deva.dev.txt
+          hin_Deva.devtest.txt
+          urd_Arab.dev.txt
+          urd_Arab.devtest.txt
+        kanuri/                   # grouped copy for the Kanuri script pair
+          knc_Arab.dev.txt
+          knc_Arab.devtest.txt
+          knc_Latn.dev.txt
+          knc_Latn.devtest.txt
+      checksums.txt
+      manifest.json
 """
 
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -35,6 +60,13 @@ LANG_CODES = {
     "hindi": "hin_Deva",
     "kanuri_arabic": "knc_Arab",
     "kanuri_latin": "knc_Latn",
+}
+
+# Groupings for the two dissociation pairs used downstream.
+# Each maps a group folder name -> list of FLORES-200 lang codes to copy in.
+GROUPS = {
+    "hindi_urdu": ["hin_Deva", "urd_Arab"],
+    "kanuri": ["knc_Arab", "knc_Latn"],
 }
 
 # Expected sentence counts, per the FLORES-200 docs.
@@ -47,6 +79,7 @@ EXPECTED_COUNTS = {
 DATA_ROOT = Path(__file__).parent
 RAW_DIR = DATA_ROOT / "raw"
 SPLITS_DIR = DATA_ROOT / "splits" / "original"
+GROUPS_ROOT = DATA_ROOT / "splits"
 CHECKSUM_FILE = DATA_ROOT / "checksums.txt"
 
 HF_REPO = "facebook/flores"
@@ -95,10 +128,29 @@ def write_splits(data: dict):
             print(f"  wrote {fpath} ({len(sentences)} lines)")
 
 
+def write_groups():
+    """Copy (never move) files from splits/original/ into task-grouped
+    folders under splits/ — one per dissociation pair. splits/original/
+    remains the single source of truth; these are convenience copies."""
+    print("\n=== grouping splits ===")
+    for group_name, codes in GROUPS.items():
+        group_dir = GROUPS_ROOT / group_name
+        group_dir.mkdir(parents=True, exist_ok=True)
+        for code in codes:
+            for split in EXPECTED_COUNTS:
+                src = SPLITS_DIR / f"{code}.{split}.txt"
+                if not src.exists():
+                    print(f"  WARNING: {src} missing, skipping", file=sys.stderr)
+                    continue
+                dst = group_dir / src.name
+                shutil.copy2(src, dst)
+                print(f"  copied {src} -> {dst}")
+
+
 def compute_checksums() -> dict:
     """SHA-256 every file under data/splits/ (and raw/ if present)."""
     checksums = {}
-    for base in (RAW_DIR, SPLITS_DIR):
+    for base in (RAW_DIR, GROUPS_ROOT):
         if not base.exists():
             continue
         for fpath in sorted(base.rglob("*")):
@@ -122,6 +174,11 @@ def main():
         action="store_true",
         help="Exit non-zero if any coverage check fails (use in CI / smoke test).",
     )
+    parser.add_argument(
+        "--skip-groups",
+        action="store_true",
+        help="Skip writing the grouped splits/hindi_urdu and splits/kanuri folders.",
+    )
     args = parser.parse_args()
 
     print("\n=== facebook/flores (frozen original) ===")
@@ -134,11 +191,15 @@ def main():
     ok = verify_coverage(data)
     write_splits(data)
 
+    if not args.skip_groups:
+        write_groups()
+
     manifest = {
         "source": {
             "hf_repo": HF_REPO,
             "coverage_ok": ok,
-        }
+        },
+        "groups": {name: codes for name, codes in GROUPS.items()} if not args.skip_groups else {},
     }
     checksums = compute_checksums()
     write_checksum_file(checksums)
