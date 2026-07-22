@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 fetch_flores.py — Day 1 task: pull FLORES-200, verify coverage, extract
-the Urdu/Hindi and Serbian Cyrillic/Latin subsets, checksum everything.
+the Urdu/Hindi and Central Kanuri Arabic/Latin subsets, checksum everything.
 
 Two sources, used for different purposes in the plan:
 
@@ -14,6 +14,13 @@ Two sources, used for different purposes in the plan:
                content has been revised/corrected since the original release.
                Use this for Method B onward (count-matching, everything after
                Checkpoint 1).
+
+NOTE: Method A and Method B therefore run on two different corpus snapshots
+(frozen original vs. revised flores_plus). This is deliberate — reproduction
+fidelity for Method A, corrected data for Method B onward — but it means the
+two methods are NOT computed on byte-identical source text. State this
+explicitly in the proposal's Section 7.1 rather than letting a reader assume
+a single static FLORES-200 source throughout.
 
 Requires: pip install datasets huggingface_hub
 flores_plus is gated — run `huggingface-cli login` and accept the dataset's
@@ -35,8 +42,8 @@ from pathlib import Path
 LANG_CODES = {
     "urdu": "urd_Arab",
     "hindi": "hin_Deva",
-    "serbian_cyrillic": "srp_Cyrl",
-    "serbian_latin": "srp_Latn",
+    "kanuri_arabic": "knc_Arab",
+    "kanuri_latin": "knc_Latn",
 }
 
 # Expected sentence counts, per the FLORES-200 / FLORES+ docs.
@@ -75,19 +82,41 @@ def load_source(source_key: str):
     out = {}
     if source_key == "original":
         # facebook/flores requires a per-language config name, e.g. "urd_Arab".
+        # This config is public/ungated, so no auth token is needed here.
         for split in ("dev", "devtest"):
             out[split] = {}
             for lang_name, code in LANG_CODES.items():
-                ds = load_dataset(repo, code, split=split, trust_remote_code=True,token=True)
+                ds = load_dataset(repo, code, split=split, trust_remote_code=True)
                 out[split][code] = ds["sentence"]
     else:
         # flores_plus ships a single "all" config with an `iso_639_3` + `iso_15924`
         # (or an `id`) column rather than one config per language — filter it.
         ds_all = load_dataset(repo, split="dev+devtest")
+
+        # Determine which column actually identifies language+script before
+        # filtering at scale, rather than silently falling back mid-filter.
+        candidate_cols = ["iso_639_3_and_script", "id"]
+        id_col = next((c for c in candidate_cols if c in ds_all.column_names), None)
+        if id_col is None:
+            raise RuntimeError(
+                f"flores_plus schema has none of {candidate_cols} — "
+                f"actual columns: {ds_all.column_names}. Inspect schema and "
+                f"update id_col logic before trusting any downstream filter."
+            )
+        print(f"  [flores_plus] using '{id_col}' as the language+script identifier column")
+
         for split in ("dev", "devtest"):
             out[split] = {}
         for lang_name, code in LANG_CODES.items():
-            subset = ds_all.filter(lambda row, c=code: row.get("iso_639_3_and_script", row.get("id", "")) == c)
+            subset = ds_all.filter(lambda row, c=code, col=id_col: row.get(col, "") == c)
+            if len(subset) == 0:
+                raise RuntimeError(
+                    f"[flores_plus] filtering '{id_col}' == '{code}' ({lang_name}) "
+                    f"returned 0 rows. This means the code doesn't match this "
+                    f"schema's values — do NOT treat this as a size mismatch; "
+                    f"inspect ds_all['{id_col}'] unique values and fix the code "
+                    f"mapping before proceeding."
+                )
             # flores_plus doesn't always expose split as a column post-concat;
             # if your pulled schema differs, split manually before filtering instead.
             for split in ("dev", "devtest"):
