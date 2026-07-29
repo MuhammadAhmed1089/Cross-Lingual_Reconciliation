@@ -187,8 +187,8 @@ def compute_cosine_gpu(a, b, center=False, procrustes=False):
         b = result.new_b
 
     elif center:
-        a -= a.mean(1, keepdims=True)
-        b -= b.mean(1, keepdims=True)
+        a = a - a.mean(0, keepdims=True)
+        b = b - b.mean(0, keepdims=True)
     
     a, b = torch.Tensor(a), torch.Tensor(b)
     a, b = a.to(DEVICE), b.to(DEVICE)
@@ -261,6 +261,22 @@ def torch_cosines_all(a, b):
     score = F.cosine_similarity(a, b, dim=0)
     return score.cpu().numpy()
 
+def anisotropic_cosine_score(a, b):
+    """
+    Anisotropy-corrected cosine similarity (Ethayarajh, 2019): subtract the
+    corpus-mean embedding vector (per language/layer) before computing cosine,
+    rather than centering each sentence's own dimensions.
+    """
+    a, b = np.array(a), np.array(b)
+    a = a - a.mean(axis=0, keepdims=True)
+    b = b - b.mean(axis=0, keepdims=True)
+
+    a_norm = a / np.linalg.norm(a, axis=1, keepdims=True)
+    b_norm = b / np.linalg.norm(b, axis=1, keepdims=True)
+
+    # per-sentence cosine (matched pairs, since these are aligned translations)
+    sims = np.sum(a_norm * b_norm, axis=1)
+    return sims.mean()
 def torch_corr_score(a, b):
     return abs(torch_corr_all(a, b)).mean()
 
