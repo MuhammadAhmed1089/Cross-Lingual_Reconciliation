@@ -176,6 +176,18 @@ def masked_mean(
     value_count = torch.sum(mask, dim=dim, keepdim=keepdim)
     return value_sum / value_count.float().clamp(min=tiny_value_of_dtype(torch.float))
 
+# util.py
+def cka_score_gpu(a, b, device=None):
+    if device is None:
+        device = DEVICE  # reuse the DEVICE already defined at top of util.py
+    a = torch.tensor(np.array(a), dtype=torch.float32, device=device)
+    b = torch.tensor(np.array(b), dtype=torch.float32, device=device)
+    a = a - a.mean(dim=0, keepdim=True)
+    b = b - b.mean(dim=0, keepdim=True)
+    cross = (a.T @ b).norm() ** 2
+    norm_a = (a.T @ a).norm()
+    norm_b = (b.T @ b).norm()
+    return (cross / (norm_a * norm_b)).item()
 
 def compute_cosine_gpu(a, b, center=False, procrustes=False):
     a, b = np.array(a), np.array(b)

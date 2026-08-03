@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from datasets import load_from_disk
 
-from util import cka_score, get_hf_model_ids, get_langs_list
+from util import cka_score_gpu, get_hf_model_ids, get_langs_list
 
 print("Entered script")
 
@@ -38,7 +38,7 @@ for model_name, hf_model_id in list(reversed(list(hf_model_ids.items()))):
         b_data = dataset[lang_b]
 
         for l in range(num_layers):
-            s = cka_score(a_data[f'mean_{l}'], b_data[f'mean_{l}'])
+            s = cka_score_gpu(a_data[f'mean_{l}'], b_data[f'mean_{l}'])
             scores_dict[hf_model_id][f"{lang_a}-{lang_b}"].append(s)
             print(f"l{l}: {s:.4f}", end=' ', flush=True)
 
