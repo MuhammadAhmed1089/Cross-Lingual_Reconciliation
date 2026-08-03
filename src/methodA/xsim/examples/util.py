@@ -295,7 +295,7 @@ def torch_corr_score(a, b):
 def get_langs_list(model_class):
     if model_class.startswith("norm"):
         langs = ['en', 'fr', 'et', 'bg']
-    elif model_class in ["mbert_repro,xlmr_repro"]:                          # ADDED THIS BRANCH
+    elif model_class in ["mbert_repro","xlmr_repro"]:                          # ADDED THIS BRANCH
         langs = ['ar','az', 'bg','cs','da','de', 'el', 'en','et', 'es', 'fr','fi','hu','kk', 'lv','lt','hi', 'no','nl', 'pl', 'ru', 'sv','sw', 'th', 'tr', 'ur','uz', 'vi', 'zh']
     elif model_class.startswith("mbert") or model_class.startswith("xlmrb"):
         langs = ['en', 'et', 'lt', 'lv', 'fr', "pl"]
