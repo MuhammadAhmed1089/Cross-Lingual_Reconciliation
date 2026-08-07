@@ -62,16 +62,18 @@ def plot_matrices():
     df_xlmr_plot  = df_xlmr.iloc[::-1]
 
     # Plot (a) mBERT
-    sns.heatmap(df_mbert_plot, ax=axes[0], cmap="Blues_r", vmin=0.4, vmax=1.0, 
-                cbar_kws={'label': 'CKA', 'location': 'top', 'shrink': 0.5})
+    sns.heatmap(df_mbert_plot, ax=axes[0], cmap="Blues_r", vmin=0.35, vmax=1.25, 
+                cbar_kws={'label': 'CKA', 'location': 'top', 'shrink': 0.5},
+                xticklabels=True, yticklabels=True)
     axes[0].set_title("(a) mBERT", y=-0.15, fontsize=14)
     axes[0].set_xlabel("src")
     axes[0].set_ylabel("tgt")
     axes[0].tick_params(axis='x', rotation=45)
 
     # Plot (b) XLM-R
-    sns.heatmap(df_xlmr_plot, ax=axes[1], cmap="Blues_r", vmin=0.5, vmax=1.0, 
-                cbar_kws={'label': 'CKA', 'location': 'top', 'shrink': 0.5})
+    sns.heatmap(df_xlmr_plot, ax=axes[1], cmap="Blues_r", vmin=0.45, vmax=1.25, 
+                cbar_kws={'label': 'CKA', 'location': 'top', 'shrink': 0.5},
+                xticklabels=True, yticklabels=True)
     axes[1].set_title("(b) XLM-R", y=-0.15, fontsize=14)
     axes[1].set_xlabel("src")
     axes[1].set_ylabel("tgt")
