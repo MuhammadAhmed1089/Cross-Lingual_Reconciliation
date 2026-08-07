@@ -1,4 +1,4 @@
-apex==0.9.10dev
+
 datasets==3.6.0
 ecco==0.1.2
 fairseq==0.12.2
