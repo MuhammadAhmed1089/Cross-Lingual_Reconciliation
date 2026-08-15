@@ -1,0 +1,83 @@
+import sys
+
+from transformers import AutoTokenizer, AutoModel
+from datasets import load_dataset
+
+from util import encode_batch, get_hf_model_ids
+import torch
+import os
+
+
+model_class = sys.argv[1]
+device = sys.argv[2]
+#model_class = "mT5"
+#model_class = "xlmr"
+
+
+batch_size = 100
+num_lines = 10000
+# num_lines = 100
+
+hf_model_ids = get_hf_model_ids(model_class)
+langs = ['urd_Arab', 'hin_Deva', 'knc_Arab', 'knc_Latn']
+
+splits=['dev','devtest']
+dataset = {}
+for l in langs:
+    dataset[l]={}
+    for s in splits:
+        dataset[l][s]=load_dataset('text',
+                                    data_files=f'../../../data/splits/{'hindi_urdu' if l in ['urd_Arab', 'hin_Deva'] else 'kanuri'}/{l}.{s}.txt')
+
+    
+for model_name,hf_model_id in list(reversed(hf_model_ids.items())):
+    print('\n loading ', hf_model_id, '\n')
+    
+    # load model
+    tokenizer = AutoTokenizer.from_pretrained(hf_model_id)
+
+    if model_class == "mT5":
+        model = AutoModel.from_pretrained(hf_model_id).encoder        
+    else:
+        model = AutoModel.from_pretrained(hf_model_id)
+    
+    _ = model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+
+    for lang in langs:
+        print(f"\n encoding {lang}")
+        
+        savedir = model_name if not model_class.startswith("norm") else f"{model_class}_{model_name}"
+        outpath = f"../experiments/encoded_datasets/xnli/{savedir}/{lang}"
+        if os.path.exists(outpath):
+            print(f"\n skipping {lang}, already encoded at {outpath}")
+            continue
+
+        dataset_enc = dataset[lang].map(
+            function=encode_batch, 
+            fn_kwargs={
+                'field': 'hypo', 
+                'tokenizer': tokenizer, 
+                'model': model,
+                'detok': True,
+                'lang_code': lang,
+                "encode_token1": False,
+                "encode_cls": False
+            },
+             batched=True,
+             batch_size=batch_size
+        )
+    
+        if model_class.startswith("norm"):
+            savedir = f"{model_class}_{model_name}"
+        else:
+            savedir = model_name
+
+        dataset_enc.save_to_disk(f"../experiments/encoded_datasets/xnli/{savedir}/{lang}")
+
+        # if lang == "en":
+        #     lang = "en_rand"
+        #     print(f"encoding {lang}")
+        #     dataset_enc = dataset_enc.shuffle(seed=42)
+        #     dataset_enc.save_to_disk(f"../experiments/encoded_datasets/xnli/{savedir}/{lang}")
+
+print("Finshed")
