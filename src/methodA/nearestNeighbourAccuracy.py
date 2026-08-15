@@ -2,7 +2,7 @@ import sys
 import os
 import pickle
 from collections import defaultdict
-from util import get_hf_model_ids, anisotropic_cosine_score, load_from_disk
+from util import get_hf_model_ids, matching_accuracy, load_from_disk
 
 model_class = sys.argv[1]
 
@@ -18,7 +18,7 @@ pairs = [
 
 scores_dict = defaultdict(dict)
 
-out_path = "../experiments/results/flores_aniso_cosine_scores.pkl"
+out_path = "../experiments/results/flores_nn_acc_scores.pkl"
 if os.path.exists(out_path):
     with open(out_path, "rb") as f:
         scores_dict.update(pickle.load(f))
@@ -52,7 +52,7 @@ for model_name, hf_id in list(reversed(list(hf_model_ids.items()))):
 
             pair_scores = []
             for l in range(num_layers):
-                s = anisotropic_cosine_score(a_data[f"mean_{l}"], b_data[f"mean_{l}"])
+                s = matching_accuracy(a_data[f"mean_{l}"], b_data[f"mean_{l}"])
                 pair_scores.append(s)
                 print(f"l{l}: {s:.4f}", end=" ", flush=True)
             print()
