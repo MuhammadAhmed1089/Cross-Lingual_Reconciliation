@@ -31,8 +31,8 @@ def load_alignments(lang_a, lang_b, split):
 def read_flores_split(lang, split, flores_root=None):
     """Raw sentences for a split -- needed here because pooled encodings alone
     don't expose per-word boundaries (Step 7)."""
-    flores_root = flores_root or os.environ.get("FLORES_ROOT", "../../data/flores200_dataset")
-    path = os.path.join(flores_root, split, f"{lang}.{split}")
+    flores_root = flores_root or os.environ.get("FLORES_ROOT", "../../data/splits/original")
+    path = os.path.join(flores_root, f"{lang}.{split}.txt")
     with open(path, encoding="utf-8") as f:
         return [line.rstrip("\n") for line in f]
 

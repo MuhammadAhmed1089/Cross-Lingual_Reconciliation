@@ -41,7 +41,7 @@ from pathlib import Path
 # Config -- adjust paths to match your FLORES-200 layout
 # ---------------------------------------------------------------------------
 
-FLORES_ROOT = os.environ.get("FLORES_ROOT", "./flores200_dataset")
+FLORES_ROOT = os.environ.get("FLORES_ROOT", "../../data/splits/original")
 ALIGN_OUT_DIR = Path("alignments")
 ALIGN_OUT_DIR.mkdir(exist_ok=True)
 
@@ -64,7 +64,7 @@ def read_flores_split(lang_code: str, split: str):
         {FLORES_ROOT}/{split}/{lang_code}.{split}
     Adjust this if your local copy uses a different naming convention.
     """
-    path = Path(FLORES_ROOT) / split / f"{lang_code}.{split}"
+    path = Path(FLORES_ROOT) / f"{lang_code}.{split}.txt"
     if not path.exists():
         raise FileNotFoundError(
             f"Could not find {path}. Set FLORES_ROOT env var or edit read_flores_split()."
